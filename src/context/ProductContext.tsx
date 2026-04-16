@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product, Review } from '@/types';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 
 interface ProductContextType {
   products: Product[];
