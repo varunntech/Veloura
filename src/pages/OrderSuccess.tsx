@@ -34,7 +34,7 @@ export default function OrderSuccess() {
               <div className="border border-stone-200 rounded-xl p-6 mb-8 text-left bg-stone-50/50 animate-fade-in">
                 <h3 className="font-serif text-lg text-slate-900 mb-4 pb-2 border-b">Order Summary</h3>
                 <div className="space-y-4 mb-4">
-                  {order.items.map((item, idx) => (
+                  {order.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex gap-4 items-center">
                       <img
                         src={item.product.image}
