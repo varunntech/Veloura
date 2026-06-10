@@ -16,8 +16,22 @@ export default function Signup() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setIsLoading(true);
+    const result = await loginWithGoogle();
+    if (result.success) {
+      navigate('/');
+    } else {
+      let errMsg = result.error || 'Failed to sign in with Google';
+      if (errMsg.includes('popup-closed-by-user')) errMsg = 'Sign in cancelled';
+      setError(errMsg);
+    }
+    setIsLoading(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,16 +230,16 @@ export default function Signup() {
 
             <div className="mt-8 pt-6 border-t">
               <p className="text-center text-sm text-slate-500 mb-4">Or sign up with</p>
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 h-12">
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5 mr-2" />
-                  Google
-                </Button>
-                <Button variant="outline" className="flex-1 h-12">
-                  <img src="https://www.svgrepo.com/show/448234/facebook.svg" alt="Facebook" className="h-5 w-5 mr-2" />
-                  Facebook
-                </Button>
-              </div>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full h-12"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+              >
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5 mr-2" />
+                Google
+              </Button>
             </div>
           </div>
         </div>

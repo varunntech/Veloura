@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, query, collection, limit, getDocs } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -13,6 +15,7 @@ import { sendWelcomeEmail } from '../lib/email';
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{success: boolean, error?: string}>;
+  loginWithGoogle: () => Promise<{success: boolean, error?: string}>;
   signup: (name: string, email: string, password: string) => Promise<{success: boolean, error?: string}>;
   logout: () => void;
   isLoading: boolean;
@@ -68,6 +71,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<{success: boolean, error?: string}> => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+      
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        let isAdmin = false;
+        try {
+          const q = query(collection(db, 'users'), limit(1));
+          const snapshot = await getDocs(q);
+          if (snapshot.empty) {
+            isAdmin = true;
+          }
+        } catch (error) {
+          console.error('Error checking users collection:', error);
+        }
+
+        const newUser = {
+          name: firebaseUser.displayName || 'User',
+          email: firebaseUser.email || '',
+          isAdmin
+        };
+        
+        await setDoc(userDocRef, newUser);
+        
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          name: firebaseUser.displayName || 'User',
+          isAdmin
+        });
+
+        sendWelcomeEmail(firebaseUser.email || '', firebaseUser.displayName || 'User');
+      } else {
+        const data = userDoc.data();
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          name: data.name || firebaseUser.displayName || 'User',
+          isAdmin: data.isAdmin || false
+        });
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const signup = async (name: string, email: string, password: string): Promise<{success: boolean, error?: string}> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -117,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, signup, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
